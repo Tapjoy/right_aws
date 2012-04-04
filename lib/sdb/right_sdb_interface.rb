@@ -88,23 +88,23 @@ module RightAws
 
     # Prepare attributes for putting.
     # (used by put_attributes)
-    def pack_attributes(items_or_attributes, replace = false, batch = false) #:nodoc:
+    def pack_attributes(items_or_attributes, replace = false, batch = false, expected_attr = {}) #:nodoc:
       if batch
         index = 0
         items_or_attributes.inject({}){|result, (item_name, attributes)|
           item_prefix = "Item.#{index}."
           result["#{item_prefix}ItemName"] = item_name.to_s
           result.merge!(
-            pack_single_item_attributes(attributes, replace, item_prefix))
+            pack_single_item_attributes(attributes, replace, item_prefix, expected_attr))
           index += 1
           result
         }
       else
-        pack_single_item_attributes(items_or_attributes, replace)
+        pack_single_item_attributes(items_or_attributes, replace, "", expected_attr)
       end
     end
 
-    def pack_single_item_attributes(attributes, replace, prefix = "")
+    def pack_single_item_attributes(attributes, replace, prefix = "", expected_attr = {})
       result = {}
       if attributes
         idx = 0
@@ -112,6 +112,17 @@ module RightAws
         attributes.each do |attribute, values|
           # set replacement attribute
           result["#{prefix}Attribute.#{idx}.Replace"] = 'true' if replace
+
+          # set expected attribute
+          if expected_attr.include?(attribute)
+            result["#{prefix}Expected.#{idx}.Name"] = attribute
+            if expected_attr[attribute].nil?
+              result["#{prefix}Expected.#{idx}.Exists"] = 'false'
+            else
+              result["#{prefix}Expected.#{idx}.Value"] = expected_attr[attribute]
+            end
+          end
+
           # pack Name/Value
           unless values.nil?
             # Array(values) does not work here:
@@ -272,7 +283,7 @@ module RightAws
     # see http://docs.amazonwebservices.com/AmazonSimpleDB/latest/DeveloperGuide/index.html?SDB_API_DomainMetadata.html
     def domain_metadata(domain)
       link = generate_request("DomainMetadata","DomainName"=>domain)
-      request_info(link,QSdbGenericParser.new)
+      request_info(link,QSdbDomainMetadataParser.new)
     end
 
     # Delete SDB domain at Amazon.
@@ -337,9 +348,10 @@ module RightAws
     #
     # see: http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/SDB_API_PutAttributes.html
     #
-    def put_attributes(domain_name, item_name, attributes, replace = false)
+    def put_attributes(domain_name, item_name, attributes, replace = false, expected_attr = {})
       params = { 'DomainName' => domain_name,
-                 'ItemName'   => item_name }.merge(pack_attributes(attributes, replace))
+                 'ItemName'   => item_name }.merge(pack_attributes(attributes, replace, false, expected_attr))
+      puts params.inspect
       link = generate_request("PutAttributes", params)
       request_info( link, QSdbSimpleParser.new )
     rescue Exception
@@ -439,9 +451,9 @@ module RightAws
     #  
     # see http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/SDB_API_DeleteAttributes.html 
     #
-    def delete_attributes(domain_name, item_name, attributes = nil)
+    def delete_attributes(domain_name, item_name, attributes = nil, expected_attr = {})
       params = { 'DomainName' => domain_name,
-                 'ItemName'   => item_name }.merge(pack_attributes(attributes))
+                 'ItemName'   => item_name }.merge(pack_attributes(attributes, false, false, expected_attr))
       link = generate_request("DeleteAttributes", params)
       request_info( link, QSdbSimpleParser.new )
     rescue Exception
@@ -619,12 +631,13 @@ module RightAws
     #      http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/index.html?UsingSelect.html
     #      http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/index.html?SDBLimits.html
     #
-    def select(select_expression, next_token = nil)
+    def select(select_expression, next_token = nil, consistent = false)
       select_expression      = query_expression_from_array(select_expression) if select_expression.is_a?(Array)
       @last_query_expression = select_expression
       #
       request_params = { 'SelectExpression' => select_expression,
-                         'NextToken'        => next_token }
+                         'NextToken'        => next_token,
+                         'ConsistentRead'   => consistent }
       link   = generate_request("Select", request_params)
       result = select_response_to_ruby(request_info( link, QSdbSelectParser.new ))
       return result unless block_given?
@@ -753,6 +766,26 @@ module RightAws
         when 'BoxUsage'  then @result[:box_usage]  = @text
         when 'NextToken' then @result[:next_token] = @text
         when 'Value'     then @result[:items].last[@item][@attribute] << @text
+        end
+      end
+    end
+
+    class QSdbDomainMetadataParser < RightAWSParser #:nodoc:
+      def reset
+        @result = {}
+      end
+      def tagend(name)
+        case name
+        when 'BoxUsage'  then @result[:box_usage]  =  @text
+        when 'RequestId' then @result[:request_id] =  @text
+
+        when 'ItemCount'                then @result[:item_count]                  =  @text.to_i
+        when 'ItemNamesSizeBytes'       then @result[:item_name_size_bytes]        =  @text.to_i
+        when 'AttributeNameCount'       then @result[:attribute_name_count]        =  @text.to_i
+        when 'AttributeNamesSizeBytes'  then @result[:attribute_names_size_bytes]  =  @text.to_i
+        when 'AttributeValueCount'      then @result[:attribute_value_count]       =  @text.to_i
+        when 'AttributeValuesSizeBytes' then @result[:attribute_values_size_bytes] =  @text.to_i
+        when 'Timestamp'                then @result[:timestamp]                   =  Time.zone.at(@text.to_i)
         end
       end
     end
