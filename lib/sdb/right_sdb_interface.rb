@@ -351,7 +351,6 @@ module RightAws
     def put_attributes(domain_name, item_name, attributes, replace = [], expected_attr = {})
       params = { 'DomainName' => domain_name,
                  'ItemName'   => item_name }.merge(pack_attributes(attributes, replace, false, expected_attr))
-      puts params.inspect
       link = generate_request("PutAttributes", params)
       request_info( link, QSdbSimpleParser.new )
     rescue Exception
