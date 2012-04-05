@@ -129,7 +129,7 @@ module RightAws
             #  - Array('') => [] but we wanna get here ['']
             [values].flatten.each do |value|
               result["#{prefix}Attribute.#{idx}.Name"]  = attribute
-              result["#{prefix}Attribute.#{idx}.Value"] = ruby_to_sdb(value) unless skip_values
+              result["#{prefix}Attribute.#{idx}.Value"] = ruby_to_sdb(value) unless skip_values || values == :all
               idx += 1
             end
           else
