@@ -88,7 +88,7 @@ module RightAws
 
     # Prepare attributes for putting.
     # (used by put_attributes)
-    def pack_attributes(items_or_attributes, replace = [] batch = false, expected_attr = {}) #:nodoc:
+    def pack_attributes(items_or_attributes, replace = [], batch = false, expected_attr = {}) #:nodoc:
       if batch
         index = 0
         items_or_attributes.inject({}){|result, (item_name, attributes)|
