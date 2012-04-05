@@ -88,7 +88,7 @@ module RightAws
 
     # Prepare attributes for putting.
     # (used by put_attributes)
-    def pack_attributes(items_or_attributes, replace = false, batch = false, expected_attr = {}) #:nodoc:
+    def pack_attributes(items_or_attributes, replace = [] batch = false, expected_attr = {}) #:nodoc:
       if batch
         index = 0
         items_or_attributes.inject({}){|result, (item_name, attributes)|
@@ -111,7 +111,7 @@ module RightAws
         skip_values = attributes.is_a?(Array)
         attributes.each do |attribute, values|
           # set replacement attribute
-          result["#{prefix}Attribute.#{idx}.Replace"] = 'true' if replace
+          result["#{prefix}Attribute.#{idx}.Replace"] = 'true' if (replace && replace.include?(attribute))
 
           # set expected attribute
           if expected_attr.include?(attribute)
@@ -348,7 +348,7 @@ module RightAws
     #
     # see: http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/SDB_API_PutAttributes.html
     #
-    def put_attributes(domain_name, item_name, attributes, replace = false, expected_attr = {})
+    def put_attributes(domain_name, item_name, attributes, replace = [], expected_attr = {})
       params = { 'DomainName' => domain_name,
                  'ItemName'   => item_name }.merge(pack_attributes(attributes, replace, false, expected_attr))
       puts params.inspect
@@ -381,7 +381,7 @@ module RightAws
     # hash of item names to attributes.
     #
     # See: http://docs.amazonwebservices.com/AmazonSimpleDB/latest/DeveloperGuide/index.html?SDB_API_BatchPutAttributes.html
-    def batch_put_attributes(domain_name, items, replace = false)
+    def batch_put_attributes(domain_name, items, replace = [])
       params = { 'DomainName' => domain_name }.merge(pack_attributes(items, replace, true))
       link = generate_request("BatchPutAttributes", params)
       request_info( link, QSdbSimpleParser.new)
