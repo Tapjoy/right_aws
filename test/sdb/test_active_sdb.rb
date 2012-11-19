@@ -1,5 +1,6 @@
 require File.dirname(__FILE__) + '/test_helper.rb'
 
+
 class TestSdb < Test::Unit::TestCase
   DOMAIN_PREFIX = 'right_sdb_awesome_test'
   CLIENT_DOMAIN = "#{DOMAIN_PREFIX}_client"

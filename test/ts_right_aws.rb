@@ -1,4 +1,4 @@
-require 'test/unit'
+require 'minitest/unit'
 $: << File.dirname(__FILE__)
 require 'test_credentials'
 TestCredentials.get_credentials
