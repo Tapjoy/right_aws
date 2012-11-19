@@ -26,7 +26,6 @@ end
 
 desc 'Test everything'
 task :test do
-  require 'test/http_connection'
   require 'test/ts_right_aws.rb'
 end
 
@@ -42,23 +41,6 @@ task :testsqs2 do
   require 'test/sqs/test_right_sqs_gen2.rb'
 end
 
-desc "Test just the S3 interface"
-task :tests3 do
-  require 'test/right_aws_test_helper'
-  require 'test/s3/test_right_s3.rb'
-end
-
-desc "Test just the S3 interface using local stubs"
-task :tests3local do
-  require 'test/right_aws_test_helper'
-  require 'test/s3/test_right_s3_stubbed.rb'
-end
-
-desc "Test just the EC2 interface"
-task :testec2 do
-  require 'test/right_aws_test_helper'
-  require 'test/ec2/test_right_ec2.rb'
-end
 
 desc "Test just the SDB interface"
 task :testsdb do

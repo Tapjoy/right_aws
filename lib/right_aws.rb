@@ -30,9 +30,9 @@ require "base64"
 require "rexml/document"
 require "openssl"
 require "digest/sha1"
+require 'logger'
 
 require 'rubygems'
-require 'right_http_connection'
 
 $:.unshift(File.dirname(__FILE__))
 require 'awsbase/version'
@@ -83,4 +83,24 @@ require 'sns/right_sns_interface'
 module Rightscale #:nodoc:
   include RightAws
   extend RightAws
+end
+
+
+# Bullshit I deleted that this gem expects
+class Object
+  def right_blank?
+    self == nil || (self.kind_of?(String) && self.to_s == '')
+  end
+
+  # This is ActiveSupport::Inflector.constantize
+  def right_constantize(camel_cased_word)
+    names = camel_cased_word.split('::')
+    names.shift if names.empty? || names.first.empty?
+
+    constant = Object
+    names.each do |name|
+      constant = constant.const_defined?(name) ? constant.const_get(name) : constant.const_missing(name)
+    end
+    constant
+  end
 end

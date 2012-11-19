@@ -381,53 +381,6 @@ module RightAws
     end
 
     #----------------------------
-    # HTTP Connections handling
-    #----------------------------
-
-    def get_server_url(request) # :nodoc:
-      "#{request[:protocol]}://#{request[:server]}:#{request[:port]}"
-    end
-
-    def get_connections_storage(aws_service) # :nodoc:
-      case @params[:connections].to_s
-      when 'dedicated' then @connections_storage        ||= {}
-      else                  Thread.current[aws_service] ||= {}
-      end
-    end
-
-    def destroy_connection(request, reason) # :nodoc:
-      connections = get_connections_storage(request[:aws_service])
-      server_url  = get_server_url(request)
-      if connections[server_url]
-        connections[server_url][:connection].finish(reason)
-        connections.delete(server_url)
-      end
-    end
-
-    # Expire the connection if it has expired.
-    def get_connection(request) # :nodoc:
-      server_url         = get_server_url(request)
-      connection_storage = get_connections_storage(request[:aws_service])
-      life_time_scratch  = Time.now-@params[:connection_lifetime]
-      # Delete out-of-dated connections
-      connections_in_list = 0
-      connection_storage.to_a.sort{|conn1, conn2| conn2[1][:last_used_at] <=> conn1[1][:last_used_at]}.each do |serv_url, conn_opts|
-        if    @params[:max_connections] <= connections_in_list
-          conn_opts[:connection].finish('out-of-limit')
-          connection_storage.delete(server_url)
-        elsif conn_opts[:last_used_at] < life_time_scratch
-          conn_opts[:connection].finish('out-of-date')
-          connection_storage.delete(server_url)
-        else
-          connections_in_list += 1
-        end
-      end
-      connection = (connection_storage[server_url] ||= {})
-      connection[:last_used_at] = Time.now
-      connection[:connection] ||= Rightscale::HttpConnection.new(:exception => RightAws::AwsError, :logger => @logger)
-    end
-
-    #----------------------------
     # HTTP Requests handling
     #----------------------------
 

@@ -36,7 +36,8 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = '>= 1.8.7'
   spec.require_path = 'lib'
 
-  spec.add_dependency('right_http_connection', '>= 1.2.5')
+  spec.add_dependency('em-synchrony', '>= 1.0.2')
+  spec.add_dependency('em-http-request')
 
   spec.description = <<-EOF
 == DESCRIPTION:
