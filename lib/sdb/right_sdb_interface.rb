@@ -349,6 +349,8 @@ module RightAws
     # see: http://docs.amazonwebservices.com/AmazonSimpleDB/2007-11-07/DeveloperGuide/SDB_API_PutAttributes.html
     #
     def put_attributes(domain_name, item_name, attributes, replace = [], expected_attr = {})
+      replace = attributes.keys if replace == :replace
+
       params = { 'DomainName' => domain_name,
                  'ItemName'   => item_name }.merge(pack_attributes(attributes, replace, false, expected_attr))
       link = generate_request("PutAttributes", params)
