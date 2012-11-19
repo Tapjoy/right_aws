@@ -1,13 +1,14 @@
 source "http://rubygems.org"
 
-gem 'right_http_connection', '1.2.5', :git => 'git@github.com:rightscale/right_http_connection.git'
-gem 'libxml-ruby', '~> 0.5.2'
+# Runtime
+gemspec
 
-group :development do
-  gem 'rake'
-  gem 'rcov'
-end
+# Dev
+gem 'rake'
+gem 'simplecov'
+gem 'pry'
+gem 'pry-remote'
+gem 'pry-awesome_print'
+gem 'pry-coolline'
 
-group :activesdb do
-  gem 'uuidtools', "~> 1.0.7"
-end
+gem 'minitest-rg'
