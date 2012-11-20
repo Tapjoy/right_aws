@@ -24,6 +24,14 @@ class TestSdb < Test::Unit::TestCase
     puts
   end
 
+  def run(*args, &block)
+    EM.synchrony do
+      super(*args, &block)
+      EM.stop
+    end
+  end
+
+
   #---------------------------
   # Rightscale::SdbInterface
   #---------------------------

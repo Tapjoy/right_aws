@@ -406,24 +406,17 @@ module RightAws
           service_params = signed_service_params(@aws_secret_access_key, service_hash, http_verb, @params[:host_to_sign], @params[:service])
         end
       end
-      # create a request
-      case http_verb
-      when 'GET'
-        request = Net::HTTP::Get.new("#{@params[:service]}?#{service_params}")
-      when 'POST'
-        request      = Net::HTTP::Post.new(@params[:service])
-        request.body = service_params
-        request['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8'
-      else
-        raise "Unsupported HTTP verb #{verb.inspect}!"
-      end
-      # prepare output hash
-      request_hash = { :request  => request,
-                       :server   => @params[:server],
-                       :port     => @params[:port],
-                       :protocol => @params[:protocol] }
-      request_hash.merge!(@params[:connection_options])
-      request_hash.merge!(@with_connection_options)
+
+      %w{GET POST}.include?(http_verb) or raise "Unsupported HTTP verb #{verb.inspect}!"
+
+      request_hash = {
+        :verb     => http_verb,
+        :path     => @params[:service] || '/',
+        :data     => service_params,
+        :server   => @params[:server],
+        :port     => @params[:port],
+        :protocol => @params[:protocol]
+      }.merge(@params[:connection_options]).merge(@with_connection_options)
       
       # If an action is marked as "non-retryable" and there was no :raise_on_timeout option set
       # explicitly then do set that option
@@ -434,11 +427,15 @@ module RightAws
       request_hash
     end
 
+    def method_missing(m, *args, &block)
+      Haxx.send(m, *args, &block)      
+    end
+
     # All services uses this guy.
     def request_info_impl(aws_service, benchblock, request, parser, &block) #:nodoc:
       request[:aws_service] = aws_service
       @connection    = get_connection(request)
-      @last_request  = request[:request]
+      @last_request  = request
       @last_response = nil
       response = nil
       blockexception = nil
@@ -457,7 +454,7 @@ module RightAws
             #########
               begin
                 @last_response = response
-                if response.is_a?(Net::HTTPSuccess)
+                if response.success?
                   @error_handler = nil
                   response.read_body(&block)
                 else
@@ -501,7 +498,7 @@ module RightAws
         end
           # check response for errors...
         @last_response = response
-        if response.is_a?(Net::HTTPSuccess)
+        if response.success?
           @error_handler = nil
           benchblock.xml.add! { parser.parse(response) }
           return parser.result
