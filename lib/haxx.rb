@@ -23,23 +23,31 @@ module Haxx
     def request(request)
       base_uri = "#{request[:protocol]}://#{request[:server]}:#{request[:port]}#{request[:path]}"
 
-      response = if request[:verb] == 'GET'
-        # specs need this, library might too.  idk -KB
-        request[:path] = "#{request[:path]}#{request[:data]}"
-        EM::HttpRequest.new(
-          "#{base_uri}?#{request[:data]}"
-        ).get
+      do_request = lambda {
+        @response = if request[:verb] == 'GET'
+          # specs need this, library might too.  idk -KB
+          request[:path] = "#{request[:path]}#{request[:data]}"
+          EM::HttpRequest.new(
+            "#{base_uri}?#{request[:data]}"
+          ).get
+        else
+          EM::HttpRequest.new(
+            "#{base_uri}"
+          ).post(
+            :head => {'Content-Type' => 'application/x-www-form-urlencoded; charset=utf-8'},
+            :body => request[:data]
+          )
+        end
+      }
+
+      if EM.reactor_running?
+        do_request.call
       else
-        EM::HttpRequest.new(
-          "#{base_uri}"
-        ).post(
-          :head => {'Content-Type' => 'application/x-www-form-urlencoded; charset=utf-8'},
-          :body => request[:data]
-        )
+        EM.synchrony { do_request.call; EM.stop }
       end
 
       Object.new.tap do |object|
-        object.instance_variable_set(:@response, response)
+        object.instance_variable_set(:@response, @response)
 
         def object.code
           @response.response_header.status
