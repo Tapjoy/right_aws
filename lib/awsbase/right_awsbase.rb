@@ -48,7 +48,7 @@ module RightAws
     def self.amz_escape(param)
       param = param.flatten.join('') if param.is_a?(Array) # ruby 1.9.x Array#to_s fix
       param.to_s.gsub(/([^a-zA-Z0-9._~-]+)/n) do
-        '%' + $1.unpack('H2' * $1.size).join('%').upcase
+        '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
       end
     end
 
